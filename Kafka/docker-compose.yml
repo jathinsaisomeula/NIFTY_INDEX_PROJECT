@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+ zookeeper: # This needs to be indented by 2 spaces under 'services:'
+   image: confluentinc/cp-zookeeper:7.5.3
+   hostname: zookeeper
+   container_name: zookeeper
+   ports:
+     - "2181:2181"
+   environment:
+     ZOOKEEPER_CLIENT_PORT: 2181
+     ZOOKEEPER_TICK_TIME: 2000
+   volumes:
+     - zookeeper_data:/var/lib/zookeeper/data
+     - zookeeper_log:/var/lib/zookeeper/log
+
+
+ kafka: # This needs to be indented by 2 spaces under 'services:'
+   image: confluentinc/cp-kafka:7.5.3
+   hostname: kafka
+   container_name: kafka
+   ports:
+     - "9093:9093" # IMPORTANT: This is the port your local Spark will connect to
+   depends_on:
+     - zookeeper
+   environment:
+     KAFKA_BROKER_ID: 1
+     KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+     KAFKA_LISTENERS: CLIENT://0.0.0.0:9093,INTERNAL://0.0.0.0:29092
+     KAFKA_ADVERTISED_LISTENERS: CLIENT://host.docker.internal:9093,INTERNAL://kafka:29092
+     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,INTERNAL:PLAINTEXT
+     KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+     KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+     KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+   volumes:
+     - kafka_data:/var/lib/kafka/data
+
+
+ python-app: # This needs to be indented by 2 spaces under 'services:'
+   build: .
+   hostname: python-app
+   container_name: Niftyindexdata-python-app-1
+   volumes:
+     - .:/app
+   command: sleep infinity
+   depends_on:
+     - kafka
+   environment:
+     KAFKA_BROKER: kafka:29092
+
+
+volumes: # This top-level key is correctly aligned
+ zookeeper_data:
+ zookeeper_log:
+ kafka_data:
